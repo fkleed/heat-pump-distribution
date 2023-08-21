@@ -12,7 +12,7 @@ data class Record(
     val hpPotentialAir: BigDecimal,
     val hpPotentialProbe: BigDecimal,
     val hpPotentialCollector: BigDecimal,
-    var hpAmountAir: BigDecimal? = null,
-    var hpAmountProbe: BigDecimal? = null,
-    var hpAmountCollector: BigDecimal? = null
+    var hpAmountAir: BigDecimal? = BigDecimal.ZERO,
+    var hpAmountProbe: BigDecimal? = BigDecimal.ZERO,
+    var hpAmountCollector: BigDecimal? = BigDecimal.ZERO
 )

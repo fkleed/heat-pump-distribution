@@ -13,6 +13,7 @@ fun main(args: Array<String>) {
 
     val csvReader: CSVReader = CSVReaderImpl()
 
+    // Different heat pump shares based on BWP
     val hpDistributionCalculation: HPDistributionCalculation = HPDistributionCalculationImpl(
         shareAshp = BigDecimal("0.8"),
         shareGshpProbe = BigDecimal("0.15"),
