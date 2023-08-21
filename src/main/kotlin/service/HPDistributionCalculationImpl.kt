@@ -30,9 +30,9 @@ class HPDistributionCalculationImpl(
 
         hpToDistribute = hpToDistribute.subtract(calculateHPSum(buildingStock2023Until2030HPDistribution))
 
-        // In buildings with year of construction 2012 - 2022 a maximum of 1 Million heat pumps are used
-        val buildingStock2012Until2022HPDistribution = if (hpToDistribute > BigDecimal("1000000")) {
-            calculateHPDistributionForBuildingStockDefault(buildingStock2012Until2022, BigDecimal("1000000"))
+        // In buildings with year of construction 2012 - 2022 a maximum of 500000 heat pumps are used
+        val buildingStock2012Until2022HPDistribution = if (hpToDistribute > BigDecimal("500000")) {
+            calculateHPDistributionForBuildingStockDefault(buildingStock2012Until2022, BigDecimal("500000"))
         } else {
             calculateHPDistributionForBuildingStockDefault(buildingStock2012Until2022, hpToDistribute)
         }
