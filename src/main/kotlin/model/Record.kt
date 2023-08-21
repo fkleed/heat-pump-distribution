@@ -7,7 +7,7 @@ data class Record(
     val buildingTypeSize: String,
     val heatingType: String,
     val yearOfConstruction: String,
-    val buildingCount: Int,
+    val buildingCount: BigDecimal,
     val hpPotentialTotal: BigDecimal,
     val hpPotentialAir: BigDecimal,
     val hpPotentialProbe: BigDecimal,

@@ -13,7 +13,7 @@ class CSVReaderImpl : CSVReader {
                 it["BuildingTypeSize"]!!.trim(),
                 it["HeatingType"]!!.trim(),
                 it["YearOfConstruction"]!!.trim(),
-                it["BuildingCount"]!!.trim().toInt(),
+                BigDecimal(it["BuildingCount"]),
                 BigDecimal(it["HPPotentialTotal"]),
                 BigDecimal(it["HPPotentialAir"]),
                 BigDecimal(it["HPPotentialProbe"]),
