@@ -1,5 +1,6 @@
 package service
 
+import io.github.oshai.kotlinlogging.KotlinLogging
 import model.Record
 import java.math.BigDecimal
 
@@ -9,6 +10,8 @@ class HPDistributionCalculationImpl(
     val shareGshpCollector: BigDecimal
 ) :
     HPDistributionCalculation {
+
+    private val logger = KotlinLogging.logger {}
     private val hpToDistribute = BigDecimal("6000000")
     override fun calculateDistribution(buildingStockWithHPPotential: List<Record>): List<Record> {
         // Split buildingStockWithHPPotential to perform calculations for different yearOfConstruction
@@ -33,30 +36,120 @@ class HPDistributionCalculationImpl(
             val maxBuildingCountHPPotentialProbe = it.buildingCount.multiply(it.hpPotentialProbe)
             val maxBuildingCountHPPotentialCollector = it.buildingCount.multiply(it.hpPotentialCollector)
 
-            val hpAmountAir = if (maxBuildingCountHPPotentialAir > buildingCountWithHPPotential.multiply(shareAshp)) {
+            var hpAmountAir = if (maxBuildingCountHPPotentialAir > buildingCountWithHPPotential.multiply(shareAshp)) {
                 buildingCountWithHPPotential.multiply(shareAshp)
             } else {
                 maxBuildingCountHPPotentialAir
             }
 
-            val hpAmountProbe = if (maxBuildingCountHPPotentialProbe > buildingCountWithHPPotential.multiply(shareGshpProbe)) {
-                buildingCountWithHPPotential.multiply(shareGshpProbe)
-            } else {
-                maxBuildingCountHPPotentialProbe
+            var hpAmountProbe =
+                if (maxBuildingCountHPPotentialProbe > buildingCountWithHPPotential.multiply(shareGshpProbe)) {
+                    buildingCountWithHPPotential.multiply(shareGshpProbe)
+                } else {
+                    maxBuildingCountHPPotentialProbe
+                }
+
+            var hpAmountCollector =
+                if (maxBuildingCountHPPotentialCollector > buildingCountWithHPPotential.multiply(shareGshpCollector)) {
+                    buildingCountWithHPPotential.multiply(shareGshpCollector)
+                } else {
+                    maxBuildingCountHPPotentialCollector
+                }
+
+            var remaining =
+                buildingCountWithHPPotential.subtract(hpAmountAir).subtract(hpAmountProbe).subtract(hpAmountCollector)
+
+            if (remaining > BigDecimal.ZERO) {
+
+                if (hpAmountAir < maxBuildingCountHPPotentialAir && hpAmountProbe == maxBuildingCountHPPotentialProbe && hpAmountCollector == maxBuildingCountHPPotentialCollector) {
+                    hpAmountAir = hpAmountAir.add(remaining.min(maxBuildingCountHPPotentialAir.subtract(hpAmountAir)))
+                }
+
+                if (hpAmountAir == maxBuildingCountHPPotentialAir && hpAmountProbe < maxBuildingCountHPPotentialProbe && hpAmountCollector == maxBuildingCountHPPotentialCollector) {
+                    hpAmountProbe =
+                        hpAmountProbe.add(remaining.min(maxBuildingCountHPPotentialProbe.subtract(hpAmountProbe)))
+                }
+
+                if (hpAmountAir == maxBuildingCountHPPotentialAir && hpAmountProbe == maxBuildingCountHPPotentialProbe && hpAmountCollector < maxBuildingCountHPPotentialCollector) {
+                    hpAmountCollector = hpAmountCollector.add(
+                        remaining.min(
+                            maxBuildingCountHPPotentialCollector.subtract(hpAmountCollector)
+                        )
+                    )
+                }
+
+                if (hpAmountAir < maxBuildingCountHPPotentialAir && hpAmountProbe < maxBuildingCountHPPotentialProbe && hpAmountCollector == maxBuildingCountHPPotentialCollector) {
+
+                    hpAmountProbe = hpAmountProbe.add(
+                        remaining.min(maxBuildingCountHPPotentialProbe.subtract(hpAmountProbe))
+                    )
+
+                    remaining = buildingCountWithHPPotential.subtract(hpAmountAir).subtract(hpAmountProbe)
+                        .subtract(hpAmountCollector)
+
+                    if (remaining > BigDecimal.ZERO) {
+                        hpAmountAir =
+                            hpAmountAir.add(remaining.min(maxBuildingCountHPPotentialAir.subtract(hpAmountAir)))
+                    }
+
+                }
+
+                if (hpAmountAir < maxBuildingCountHPPotentialAir && hpAmountProbe == maxBuildingCountHPPotentialProbe && hpAmountCollector < maxBuildingCountHPPotentialCollector) {
+
+                    hpAmountCollector = hpAmountCollector.add(
+                        remaining.min(maxBuildingCountHPPotentialCollector.subtract(hpAmountCollector))
+                    )
+
+                    remaining = buildingCountWithHPPotential.subtract(hpAmountAir).subtract(hpAmountProbe)
+                        .subtract(hpAmountCollector)
+
+                    if (remaining > BigDecimal.ZERO) {
+                        hpAmountAir =
+                            hpAmountAir.add(remaining.min(maxBuildingCountHPPotentialAir.subtract(hpAmountAir)))
+                    }
+
+                }
+
+                if (hpAmountAir == maxBuildingCountHPPotentialAir && hpAmountProbe < maxBuildingCountHPPotentialProbe && hpAmountCollector < maxBuildingCountHPPotentialCollector) {
+
+                    hpAmountProbe = hpAmountProbe.add(
+                        remaining.multiply(shareGshpProbe.divide(shareGshpProbe.add(shareGshpCollector)))
+                            .min(maxBuildingCountHPPotentialProbe.subtract(hpAmountProbe))
+                    )
+
+                    hpAmountCollector = hpAmountCollector.add(
+                        remaining.multiply(shareGshpCollector.divide(shareGshpProbe.add(shareGshpCollector)))
+                            .min(maxBuildingCountHPPotentialCollector.subtract(hpAmountCollector))
+                    )
+
+                    remaining = buildingCountWithHPPotential.subtract(hpAmountAir).subtract(hpAmountProbe)
+                        .subtract(hpAmountCollector)
+
+                    if (remaining > BigDecimal.ZERO && hpAmountProbe == maxBuildingCountHPPotentialProbe && hpAmountCollector < maxBuildingCountHPPotentialCollector) {
+                        hpAmountCollector = hpAmountCollector.add(
+                            remaining.min(maxBuildingCountHPPotentialCollector.subtract(hpAmountCollector))
+                        )
+                    }
+
+                    if (remaining > BigDecimal.ZERO && hpAmountProbe < maxBuildingCountHPPotentialProbe && hpAmountCollector == maxBuildingCountHPPotentialCollector) {
+                        hpAmountProbe = hpAmountProbe.add(
+                            remaining.min(maxBuildingCountHPPotentialProbe.subtract(hpAmountProbe))
+                        )
+                    }
+                }
+
+                remaining = buildingCountWithHPPotential.subtract(hpAmountAir).subtract(hpAmountProbe)
+                    .subtract(hpAmountCollector)
+
+                if (remaining > BigDecimal.ZERO) {
+                    logger.info { "There is still a remaining of $remaining that wont be assigned" }
+                }
+
             }
 
-            val hpAmountCollector = if (maxBuildingCountHPPotentialCollector > buildingCountWithHPPotential.multiply(shareGshpCollector)) {
-                buildingCountWithHPPotential.multiply(shareGshpCollector)
-            } else {
-                maxBuildingCountHPPotentialCollector
-            }
-
-            val remaining = buildingCountWithHPPotential.subtract(hpAmountAir).subtract(hpAmountProbe).subtract(hpAmountCollector)
-
-            println(remaining)
-
-
-
+            it.hpAmountAir = hpAmountAir
+            it.hpAmountProbe = hpAmountProbe
+            it.hpAmountCollector = hpAmountCollector
         }
 
         return buildingStock2023Until2030
