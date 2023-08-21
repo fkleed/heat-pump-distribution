@@ -1,9 +1,7 @@
 import io.github.oshai.kotlinlogging.KotlinLogging
-import service.CSVReader
-import service.CSVReaderImpl
-import service.HPDistributionCalculation
-import service.HPDistributionCalculationImpl
+import service.*
 import java.io.FileInputStream
+import java.io.FileOutputStream
 import java.math.BigDecimal
 
 private val logger = KotlinLogging.logger {}
@@ -27,5 +25,7 @@ fun main(args: Array<String>) {
         )
     )
 
-    logger.info { "Write results as csv with output file path:" }
+    logger.info { "Write results as csv with output file path: ${args[1]}" }
+    val csvWriter: CSVWriter = CSVWriterImpl()
+    csvWriter.writeCSV(FileOutputStream(args[1]), buildingStockWithHPDistribution)
 }
