@@ -70,14 +70,14 @@ class HPDistributionCalculationImpl(
     }
 
     private fun calculateHPDistributionForBuildingStockDefault(
-        buildingStock2012Until2022: List<Record>,
+        buildingStockDefault: List<Record>,
         totalHPAmount: BigDecimal
     ): List<Record> {
 
         // Calculate the max possible amount of heat pumps to have a reference value
-        val maxHpPotential = calculateMaxHPPotential(buildingStock2012Until2022)
+        val maxHpPotential = calculateMaxHPPotential(buildingStockDefault)
 
-        buildingStock2012Until2022.forEach {
+        buildingStockDefault.forEach {
             val hpPotential =
                 it.buildingCount.multiply(it.hpPotentialTotal).divide(maxHpPotential, 12, RoundingMode.HALF_UP)
                     .multiply(totalHPAmount).min(it.buildingCount.multiply(it.hpPotentialTotal))
@@ -89,7 +89,7 @@ class HPDistributionCalculationImpl(
             it.hpAmountCollector = recordWithHPDistribution.hpAmountCollector
         }
 
-        return buildingStock2012Until2022
+        return buildingStockDefault
     }
 
     private fun calculateHPDistributionForRecord(record: Record, hpPotential: BigDecimal): Record {
