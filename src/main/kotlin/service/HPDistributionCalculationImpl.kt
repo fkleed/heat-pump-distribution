@@ -26,20 +26,33 @@ class HPDistributionCalculationImpl(
         // Perform the different distribution calculations for the different yearOfConstruction
         // Where it is possible heat pumps are used in buildings with year of construction 2023 - 2030
         val buildingStock2023Until2030HPDistribution =
-            calculateHPDistributionForBuildingStock2023Until2030(buildingStock2023Until2030)
+            calculateHPDistributionForBuildingStock2023Until2030(buildingStock2023Until2030).toMutableList()
 
         hpToDistribute = hpToDistribute.subtract(calculateHPSum(buildingStock2023Until2030HPDistribution))
 
         // In buildings with year of construction 2012 - 2022 a maximum of 500000 heat pumps are used
         val buildingStock2012Until2022HPDistribution = if (hpToDistribute > BigDecimal("500000")) {
-            calculateHPDistributionForBuildingStockDefault(buildingStock2012Until2022, BigDecimal("500000"))
+            calculateHPDistributionForBuildingStockDefault(
+                buildingStock2012Until2022,
+                BigDecimal("500000")
+            ).toMutableList()
         } else {
-            calculateHPDistributionForBuildingStockDefault(buildingStock2012Until2022, hpToDistribute)
+            calculateHPDistributionForBuildingStockDefault(buildingStock2012Until2022, hpToDistribute).toMutableList()
         }
 
         hpToDistribute = hpToDistribute.subtract(calculateHPSum(buildingStock2012Until2022HPDistribution))
 
-        return buildingStockWithHPPotential
+        val buildingStockBeginUntil2011HPDistribution =
+            calculateHPDistributionForBuildingStockDefault(buildingStockBeginUntil2011, hpToDistribute).toMutableList()
+
+        hpToDistribute = hpToDistribute.subtract(calculateHPSum(buildingStockBeginUntil2011HPDistribution))
+
+        if (hpToDistribute > BigDecimal.ZERO) {
+            logger.info { "Remaining amount of $hpToDistribute heat pumps could not be distributed" }
+        }
+
+        return buildingStock2023Until2030HPDistribution.union(buildingStock2012Until2022HPDistribution)
+            .union(buildingStockBeginUntil2011HPDistribution).toList()
     }
 
     private fun calculateHPDistributionForBuildingStock2023Until2030(buildingStock2023Until2030: List<Record>): List<Record> {
@@ -185,14 +198,6 @@ class HPDistributionCalculationImpl(
                     )
                 }
             }
-
-            remaining = hpPotential.subtract(hpAmountAir).subtract(hpAmountProbe)
-                .subtract(hpAmountCollector)
-
-            if (remaining > BigDecimal.ZERO) {
-                logger.info { "There is still a remaining of $remaining that wont be assigned" }
-            }
-
         }
 
         record.hpAmountAir = hpAmountAir

@@ -9,7 +9,7 @@ import java.math.BigDecimal
 private val logger = KotlinLogging.logger {}
 
 fun main(args: Array<String>) {
-    logger.info { "Starting the application with file path ${args[0]}" }
+    logger.info { "Starting the application with input file path: ${args[0]}" }
 
     val csvReader: CSVReader = CSVReaderImpl()
 
@@ -20,9 +20,12 @@ fun main(args: Array<String>) {
         shareGshpCollector = BigDecimal("0.05")
     )
 
-    hpDistributionCalculation.calculateDistribution(
+    logger.info { "Calculating the heat pump distribution" }
+    val buildingStockWithHPDistribution = hpDistributionCalculation.calculateDistribution(
         csvReader.readCSV(
             FileInputStream(args[0])
         )
     )
+
+    logger.info { "Write results as csv with output file path:" }
 }
