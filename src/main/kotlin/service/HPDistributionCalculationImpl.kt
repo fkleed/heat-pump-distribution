@@ -5,17 +5,18 @@ import model.Record
 import java.math.BigDecimal
 import java.math.RoundingMode
 
-class HPDistributionCalculationImpl(
-    val shareAshp: BigDecimal,
-    val shareGshpProbe: BigDecimal,
-    val shareGshpCollector: BigDecimal,
-    hpAmount: BigDecimal
-) :
-    HPDistributionCalculation {
+class HPDistributionCalculationImpl : HPDistributionCalculation {
 
     private val logger = KotlinLogging.logger {}
-    private var hpToDistribute = hpAmount.max(BigDecimal.ZERO)
-    override fun calculateDistribution(buildingStockWithHPPotential: List<Record>): List<Record> {
+    override fun calculateDistribution(
+        buildingStockWithHPPotential: List<Record>,
+        hpAmount: BigDecimal,
+        shareAshp: BigDecimal,
+        shareGshpProbe: BigDecimal,
+        shareGshpCollector: BigDecimal
+    ): List<Record> {
+        var hpToDistribute = hpAmount.max(BigDecimal.ZERO)
+
         // Split buildingStockWithHPPotential to perform calculations for different yearOfConstruction
         val buildingStock2023Until2030 =
             buildingStockWithHPPotential.partition { it.yearOfConstruction == "2023 - 2030" }.first
@@ -28,11 +29,19 @@ class HPDistributionCalculationImpl(
         // Where it is possible heat pumps are used in buildings with year of construction 2023 - 2030
         val buildingStock2023Until2030HPDistribution =
             if (hpToDistribute > calculateMaxHPPotential(buildingStock2023Until2030)) {
-                calculateHPDistributionForBuildingStock2023Until2030(buildingStock2023Until2030).toMutableList()
+                calculateHPDistributionForBuildingStock2023Until2030(
+                    buildingStock2023Until2030,
+                    shareAshp,
+                    shareGshpProbe,
+                    shareGshpCollector
+                ).toMutableList()
             } else {
                 calculateHPDistributionForBuildingStockDefault(
                     buildingStock2023Until2030,
-                    hpToDistribute
+                    hpToDistribute,
+                    shareAshp,
+                    shareGshpProbe,
+                    shareGshpCollector
                 ).toMutableList()
             }
 
@@ -44,10 +53,19 @@ class HPDistributionCalculationImpl(
         val buildingStock2012Until2022HPDistribution = if (hpToDistribute > BigDecimal("500000")) {
             calculateHPDistributionForBuildingStockDefault(
                 buildingStock2012Until2022,
-                BigDecimal("500000")
+                BigDecimal("500000"),
+                shareAshp,
+                shareGshpProbe,
+                shareGshpCollector
             ).toMutableList()
         } else {
-            calculateHPDistributionForBuildingStockDefault(buildingStock2012Until2022, hpToDistribute).toMutableList()
+            calculateHPDistributionForBuildingStockDefault(
+                buildingStock2012Until2022,
+                hpToDistribute,
+                shareAshp,
+                shareGshpProbe,
+                shareGshpCollector
+            ).toMutableList()
         }
 
         hpToDistribute = hpToDistribute.subtract(calculateHPSum(buildingStock2012Until2022HPDistribution)).max(
@@ -55,7 +73,13 @@ class HPDistributionCalculationImpl(
         )
 
         val buildingStockBeginUntil2011HPDistribution =
-            calculateHPDistributionForBuildingStockDefault(buildingStockBeginUntil2011, hpToDistribute).toMutableList()
+            calculateHPDistributionForBuildingStockDefault(
+                buildingStockBeginUntil2011,
+                hpToDistribute,
+                shareAshp,
+                shareGshpProbe,
+                shareGshpCollector
+            ).toMutableList()
 
         hpToDistribute = hpToDistribute.subtract(calculateHPSum(buildingStockBeginUntil2011HPDistribution)).max(
             BigDecimal.ZERO
@@ -69,11 +93,22 @@ class HPDistributionCalculationImpl(
             .union(buildingStockBeginUntil2011HPDistribution).toList()
     }
 
-    private fun calculateHPDistributionForBuildingStock2023Until2030(buildingStock2023Until2030: List<Record>): List<Record> {
+    private fun calculateHPDistributionForBuildingStock2023Until2030(
+        buildingStock2023Until2030: List<Record>,
+        shareAshp: BigDecimal,
+        shareGshpProbe: BigDecimal,
+        shareGshpCollector: BigDecimal
+    ): List<Record> {
         buildingStock2023Until2030.forEach {
             val hpPotential = it.buildingCount.multiply(it.hpPotentialTotal)
 
-            val recordWithHPDistribution = calculateHPDistributionForRecord(it, hpPotential)
+            val recordWithHPDistribution = calculateHPDistributionForRecord(
+                it,
+                hpPotential,
+                shareAshp,
+                shareGshpProbe,
+                shareGshpCollector
+            )
 
             it.hpAmountAir = recordWithHPDistribution.hpAmountAir
             it.hpAmountProbe = recordWithHPDistribution.hpAmountProbe
@@ -85,7 +120,10 @@ class HPDistributionCalculationImpl(
 
     private fun calculateHPDistributionForBuildingStockDefault(
         buildingStockDefault: List<Record>,
-        totalHPAmount: BigDecimal
+        totalHPAmount: BigDecimal,
+        shareAshp: BigDecimal,
+        shareGshpProbe: BigDecimal,
+        shareGshpCollector: BigDecimal
     ): List<Record> {
 
         // Calculate the max possible amount of heat pumps to have a reference value
@@ -96,7 +134,13 @@ class HPDistributionCalculationImpl(
                 it.buildingCount.multiply(it.hpPotentialTotal).divide(maxHpPotential, 12, RoundingMode.HALF_UP)
                     .multiply(totalHPAmount).min(it.buildingCount.multiply(it.hpPotentialTotal))
 
-            val recordWithHPDistribution = calculateHPDistributionForRecord(it, hpPotential)
+            val recordWithHPDistribution = calculateHPDistributionForRecord(
+                it,
+                hpPotential,
+                shareAshp,
+                shareGshpProbe,
+                shareGshpCollector
+            )
 
             it.hpAmountAir = recordWithHPDistribution.hpAmountAir
             it.hpAmountProbe = recordWithHPDistribution.hpAmountProbe
@@ -106,7 +150,13 @@ class HPDistributionCalculationImpl(
         return buildingStockDefault
     }
 
-    private fun calculateHPDistributionForRecord(record: Record, hpPotential: BigDecimal): Record {
+    private fun calculateHPDistributionForRecord(
+        record: Record,
+        hpPotential: BigDecimal,
+        shareAshp: BigDecimal,
+        shareGshpProbe: BigDecimal,
+        shareGshpCollector: BigDecimal
+    ): Record {
         val maxBuildingCountHPPotentialAir = record.buildingCount.multiply(record.hpPotentialAir)
         val maxBuildingCountHPPotentialProbe = record.buildingCount.multiply(record.hpPotentialProbe)
         val maxBuildingCountHPPotentialCollector = record.buildingCount.multiply(record.hpPotentialCollector)
