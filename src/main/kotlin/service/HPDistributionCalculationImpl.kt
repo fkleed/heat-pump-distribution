@@ -6,7 +6,6 @@ import java.math.BigDecimal
 import java.math.RoundingMode
 
 class HPDistributionCalculationImpl : HPDistributionCalculation {
-
     private val logger = KotlinLogging.logger {}
     override fun calculateDistribution(
         buildingStockWithHPPotential: List<Record>,
@@ -15,6 +14,14 @@ class HPDistributionCalculationImpl : HPDistributionCalculation {
         shareGshpProbe: BigDecimal,
         shareGshpCollector: BigDecimal
     ): List<Record> {
+        if (shareAshp.add(shareGshpProbe).add(shareGshpCollector).toInt() != 1) {
+            throw IllegalArgumentException(
+                "The sum of the shares (${
+                    shareAshp.add(shareGshpProbe).add(shareGshpCollector)
+                }) is not one"
+            )
+        }
+
         var hpToDistribute = hpAmount.max(BigDecimal.ZERO)
 
         // Split buildingStockWithHPPotential to perform calculations for different yearOfConstruction

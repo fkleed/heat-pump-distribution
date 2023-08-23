@@ -3,6 +3,7 @@ package service
 import model.Record
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.Test
+import java.lang.IllegalArgumentException
 import java.math.BigDecimal
 
 class HPDistributionCalculationImplTest {
@@ -14,7 +15,7 @@ class HPDistributionCalculationImplTest {
     fun `calculates the correct distribution of heat pumps`() {
         val distributedHPs = hpDistributionCalculationImpl.calculateDistribution(
             records(),
-            BigDecimal("6000000"),
+            BigDecimal("100"),
             BigDecimal("0.8"),
             BigDecimal("0.15"),
             BigDecimal("0.05"),
@@ -51,23 +52,18 @@ class HPDistributionCalculationImplTest {
     }
 
     @Test
-    fun `distributes no heat pumps when heat pump shared is zero`() {
-        val distributedHPs = hpDistributionCalculationImpl.calculateDistribution(
-            records(),
-            BigDecimal("6000000"),
-            BigDecimal.ZERO,
-            BigDecimal.ZERO,
-            BigDecimal.ZERO,
-        )
+    fun `throws IllegalArgumentException when heat pump share is less than one`() {
+        val exception = Assertions.assertThrows(IllegalArgumentException::class.java) {
+            hpDistributionCalculationImpl.calculateDistribution(
+                records(),
+                BigDecimal("100"),
+                BigDecimal.ZERO,
+                BigDecimal.ZERO,
+                BigDecimal.ZERO,
+            )
+        }
 
-        Assertions.assertEquals(distributedHPs.size, 2)
-        Assertions.assertEquals(0, distributedHPs[0].hpAmountAir?.toInt())
-        Assertions.assertEquals(0, distributedHPs[0].hpAmountProbe?.toInt())
-        Assertions.assertEquals(0, distributedHPs[0].hpAmountCollector?.toInt())
-
-        Assertions.assertEquals(0, distributedHPs[1].hpAmountAir?.toInt())
-        Assertions.assertEquals(0, distributedHPs[1].hpAmountProbe?.toInt())
-        Assertions.assertEquals(0, distributedHPs[1].hpAmountCollector?.toInt())
+        Assertions.assertEquals("The sum of the shares (0) is not one", exception.message)
     }
 
     companion object {
