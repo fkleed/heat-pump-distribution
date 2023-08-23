@@ -12,17 +12,17 @@ fun main(args: Array<String>) {
     val csvReader: CSVReader = CSVReaderImpl()
 
     // Different heat pump shares based on BWP
-    val hpDistributionCalculation: HPDistributionCalculation = HPDistributionCalculationImpl(
-        shareAshp = BigDecimal("0.8"),
-        shareGshpProbe = BigDecimal("0.15"),
-        shareGshpCollector = BigDecimal("0.05")
-    )
+    val hpDistributionCalculation: HPDistributionCalculation = HPDistributionCalculationImpl()
 
     logger.info { "Calculating the heat pump distribution" }
     val buildingStockWithHPDistribution = hpDistributionCalculation.calculateDistribution(
         csvReader.readCSV(
             FileInputStream(args[0])
-        )
+        ),
+        BigDecimal("6000000"),
+        BigDecimal("0.8"),
+        BigDecimal("0.15"),
+        BigDecimal("0.05"),
     )
 
     logger.info { "Write results as csv with output file path: ${args[1]}" }
