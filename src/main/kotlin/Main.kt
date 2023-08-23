@@ -15,7 +15,8 @@ fun main(args: Array<String>) {
     val hpDistributionCalculation: HPDistributionCalculation = HPDistributionCalculationImpl(
         shareAshp = BigDecimal("0.8"),
         shareGshpProbe = BigDecimal("0.15"),
-        shareGshpCollector = BigDecimal("0.05")
+        shareGshpCollector = BigDecimal("0.05"),
+        hpAmount = BigDecimal("6000000")
     )
 
     logger.info { "Calculating the heat pump distribution" }

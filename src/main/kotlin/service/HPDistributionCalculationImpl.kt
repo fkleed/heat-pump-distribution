@@ -8,12 +8,13 @@ import java.math.RoundingMode
 class HPDistributionCalculationImpl(
     val shareAshp: BigDecimal,
     val shareGshpProbe: BigDecimal,
-    val shareGshpCollector: BigDecimal
+    val shareGshpCollector: BigDecimal,
+    hpAmount: BigDecimal
 ) :
     HPDistributionCalculation {
 
     private val logger = KotlinLogging.logger {}
-    private var hpToDistribute = BigDecimal("6000000")
+    private var hpToDistribute = hpAmount.max(BigDecimal.ZERO)
     override fun calculateDistribution(buildingStockWithHPPotential: List<Record>): List<Record> {
         // Split buildingStockWithHPPotential to perform calculations for different yearOfConstruction
         val buildingStock2023Until2030 =
@@ -26,9 +27,18 @@ class HPDistributionCalculationImpl(
         // Perform the different distribution calculations for the different yearOfConstruction
         // Where it is possible heat pumps are used in buildings with year of construction 2023 - 2030
         val buildingStock2023Until2030HPDistribution =
-            calculateHPDistributionForBuildingStock2023Until2030(buildingStock2023Until2030).toMutableList()
+            if (hpToDistribute > calculateMaxHPPotential(buildingStock2023Until2030)) {
+                calculateHPDistributionForBuildingStock2023Until2030(buildingStock2023Until2030).toMutableList()
+            } else {
+                calculateHPDistributionForBuildingStockDefault(
+                    buildingStock2023Until2030,
+                    hpToDistribute
+                ).toMutableList()
+            }
 
-        hpToDistribute = hpToDistribute.subtract(calculateHPSum(buildingStock2023Until2030HPDistribution))
+        hpToDistribute = hpToDistribute.subtract(calculateHPSum(buildingStock2023Until2030HPDistribution)).max(
+            BigDecimal.ZERO
+        )
 
         // In buildings with year of construction 2012 - 2022 a maximum of 500000 heat pumps are used
         val buildingStock2012Until2022HPDistribution = if (hpToDistribute > BigDecimal("500000")) {
@@ -40,12 +50,16 @@ class HPDistributionCalculationImpl(
             calculateHPDistributionForBuildingStockDefault(buildingStock2012Until2022, hpToDistribute).toMutableList()
         }
 
-        hpToDistribute = hpToDistribute.subtract(calculateHPSum(buildingStock2012Until2022HPDistribution))
+        hpToDistribute = hpToDistribute.subtract(calculateHPSum(buildingStock2012Until2022HPDistribution)).max(
+            BigDecimal.ZERO
+        )
 
         val buildingStockBeginUntil2011HPDistribution =
             calculateHPDistributionForBuildingStockDefault(buildingStockBeginUntil2011, hpToDistribute).toMutableList()
 
-        hpToDistribute = hpToDistribute.subtract(calculateHPSum(buildingStockBeginUntil2011HPDistribution))
+        hpToDistribute = hpToDistribute.subtract(calculateHPSum(buildingStockBeginUntil2011HPDistribution)).max(
+            BigDecimal.ZERO
+        )
 
         if (hpToDistribute > BigDecimal.ZERO) {
             logger.info { "Remaining amount of $hpToDistribute heat pumps could not be distributed" }
