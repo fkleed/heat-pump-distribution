@@ -11,7 +11,6 @@ class CSVReaderImpl : CSVReader {
             Record(
                 it["NUTS3Code"]!!.trim(),
                 it["BuildingTypeSize"]!!.trim(),
-                it["HeatingType"]!!.trim(),
                 it["YearOfConstruction"]!!.trim(),
                 BigDecimal(it["BuildingCount"]),
                 BigDecimal(it["HPPotentialTotal"]),

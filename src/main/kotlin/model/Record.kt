@@ -5,7 +5,6 @@ import java.math.BigDecimal
 data class Record(
     val nuts3Code: String,
     val buildingTypeSize: String,
-    val heatingType: String,
     val yearOfConstruction: String,
     val buildingCount: BigDecimal,
     val hpPotentialTotal: BigDecimal,
