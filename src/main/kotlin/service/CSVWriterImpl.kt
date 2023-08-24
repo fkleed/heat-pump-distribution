@@ -9,7 +9,6 @@ class CSVWriterImpl : CSVWriter {
         writeRow(
             "NUTS3Code",
             "BuildingTypeSize",
-            "HeatingType",
             "YearOfConstruction",
             "BuildingCount",
             "HPPotentialTotal",
@@ -25,7 +24,6 @@ class CSVWriterImpl : CSVWriter {
             writeRow(
                 record.nuts3Code,
                 record.buildingTypeSize,
-                record.heatingType,
                 record.yearOfConstruction,
                 record.buildingCount,
                 record.hpPotentialTotal,

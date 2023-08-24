@@ -73,7 +73,6 @@ class HPDistributionCalculationImplTest {
                 "123",
                 "ABC",
                 "ABC",
-                "ABC",
                 BigDecimal("10.0"),
                 BigDecimal("0.5"),
                 BigDecimal("0.5"),
@@ -82,7 +81,6 @@ class HPDistributionCalculationImplTest {
             ),
             Record(
                 "321",
-                "ABC",
                 "ABC",
                 "ABC",
                 BigDecimal("10.0"),
